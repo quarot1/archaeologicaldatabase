@@ -1,37 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Archaeological Sites Map</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+    }
+
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+
+    /* small loading overlay so you know it's working */
+    #status {
+      position: absolute;
+      z-index: 1000;
+      top: 10px;
+      left: 10px;
+      background: white;
+      padding: 8px 10px;
+      font-family: sans-serif;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+
 <body>
-  <div id="map"></div>
 
-  <script>
-    // 1. Initialize map
-    const map = L.map('map').setView([46.05, 14.5], 8);
+<div id="status">Loading map...</div>
+<div id="map"></div>
 
-    // 2. Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+<script>
+  // 1. Create map
+  const map = L.map('map').setView([46.05, 14.5], 8);
 
-    // 3. Load archaeological sites from OpenStreetMap
-    async function loadSites() {
+  // 2. Base map tiles (OpenStreetMap)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // 3. Add a fallback marker so map is NEVER empty
+  L.marker([46.05, 14.5])
+    .addTo(map)
+    .bindPopup("Map loaded successfully");
+
+  // 4. Load archaeological sites safely
+  async function loadSites() {
+    try {
       const query = `
         [out:json];
         node["historic"="archaeological_site"](45,13,47,16);
         out;
       `;
 
-      const url = "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(query);
+      const url = "https://overpass-api.de/api/interpreter?data=" +
+                  encodeURIComponent(query);
 
-      const response = await fetch(url);
-      const data = await response.json();
+      const res = await fetch(url);
+
+      if (!res.ok) throw new Error("Overpass request failed");
+
+      const data = await res.json();
+
+      let count = 0;
 
       data.elements.forEach(el => {
         if (el.lat && el.lon) {
           L.marker([el.lat, el.lon])
             .addTo(map)
             .bindPopup(el.tags?.name || "Archaeological site");
+
+          count++;
         }
       });
-    }
 
-    loadSites();
-  </script>
+      document.getElementById("status").innerText =
+        `Loaded ${count} archaeological sites`;
+
+    } catch (err) {
+      console.error(err);
+
+      document.getElementById("status").innerText =
+        "Could not load sites (map still works)";
+    }
+  }
+
+  loadSites();
+</script>
+
 </body>
+</html>
