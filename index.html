@@ -1,10 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Website</title>
+  <title>Archaeological Sites Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <style>
+    #map { height: 100vh; width: 100%; }
+  </style>
 </head>
+
 <body>
-  <h1>Hello World!</h1>
-  <p>This is my website on GitHub Pages.</p>
+<div id="map"></div>
+
+<script>
+  // 1. Initialize map
+  const map = L.map('map').setView([46.05, 14.5], 8); // Slovenia-ish center
+
+  // 2. OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+</script>
 </body>
 </html>
