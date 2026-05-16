@@ -21,7 +21,6 @@
       width: 100%;
     }
 
-    /* small loading overlay so you know it's working */
     #status {
       position: absolute;
       z-index: 1000;
@@ -45,17 +44,28 @@
   // 1. Create map
   const map = L.map('map').setView([46.05, 14.5], 8);
 
-  // 2. Base map tiles (OpenStreetMap)
+  // 2. OpenStreetMap base layer
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  // 3. Add a fallback marker so map is NEVER empty
-  L.marker([46.05, 14.5])
+  // 3. Red dot style (archaeological sites)
+  function addRedDot(lat, lon, name) {
+    return L.circleMarker([lat, lon], {
+      radius: 5,
+      color: "red",
+      fillColor: "red",
+      fillOpacity: 0.9,
+      weight: 1
+    })
     .addTo(map)
-    .bindPopup("Map loaded successfully");
+    .bindPopup(name || "Archaeological site");
+  }
 
-  // 4. Load archaeological sites safely
+  // 4. Always show one marker so map is never empty
+  addRedDot(46.05, 14.5, "Map loaded");
+
+  // 5. Load archaeological sites from OpenStreetMap (Overpass API)
   async function loadSites() {
     try {
       const query = `
@@ -64,11 +74,11 @@
         out;
       `;
 
-      const url = "https://overpass-api.de/api/interpreter?data=" +
-                  encodeURIComponent(query);
+      const url =
+        "https://overpass-api.de/api/interpreter?data=" +
+        encodeURIComponent(query);
 
       const res = await fetch(url);
-
       if (!res.ok) throw new Error("Overpass request failed");
 
       const data = await res.json();
@@ -77,10 +87,11 @@
 
       data.elements.forEach(el => {
         if (el.lat && el.lon) {
-          L.marker([el.lat, el.lon])
-            .addTo(map)
-            .bindPopup(el.tags?.name || "Archaeological site");
-
+          addRedDot(
+            el.lat,
+            el.lon,
+            el.tags?.name || "Archaeological site"
+          );
           count++;
         }
       });
@@ -92,7 +103,7 @@
       console.error(err);
 
       document.getElementById("status").innerText =
-        "Could not load sites (map still works)";
+        "Map loaded, but sites failed to load";
     }
   }
 
